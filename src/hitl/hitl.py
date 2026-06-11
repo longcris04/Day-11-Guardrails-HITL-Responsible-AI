@@ -65,32 +65,40 @@ class ConfidenceRouter:
         Returns:
             RoutingDecision with routing action and metadata
         """
-        # TODO 12: Implement routing logic
-        #
-        # 1. Check if action_type is in HIGH_RISK_ACTIONS
-        #    -> If yes: always escalate (action="escalate", priority="high",
-        #       requires_human=True, reason="High-risk action: {action_type}")
-        #
-        # 2. Check confidence thresholds:
-        #    - confidence >= 0.9:
-        #      action="auto_send", priority="low",
-        #      requires_human=False, reason="High confidence"
-        #
-        #    - 0.7 <= confidence < 0.9:
-        #      action="queue_review", priority="normal",
-        #      requires_human=True, reason="Medium confidence — needs review"
-        #
-        #    - confidence < 0.7:
-        #      action="escalate", priority="high",
-        #      requires_human=True, reason="Low confidence — escalating"
+        if action_type in HIGH_RISK_ACTIONS:
+            return RoutingDecision(
+                action="escalate",
+                confidence=confidence,
+                reason=f"High-risk action: {action_type}",
+                priority="high",
+                requires_human=True,
+            )
+
+        if confidence >= self.HIGH_THRESHOLD:
+            return RoutingDecision(
+                action="auto_send",
+                confidence=confidence,
+                reason="High confidence",
+                priority="low",
+                requires_human=False,
+            )
+
+        if confidence >= self.MEDIUM_THRESHOLD:
+            return RoutingDecision(
+                action="queue_review",
+                confidence=confidence,
+                reason="Medium confidence — needs review",
+                priority="normal",
+                requires_human=True,
+            )
 
         return RoutingDecision(
-            action="auto_send",
+            action="escalate",
             confidence=confidence,
-            reason="TODO: implement routing logic",
-            priority="low",
-            requires_human=False,
-        )  # TODO: Replace with implementation
+            reason="Low confidence — escalating",
+            priority="high",
+            requires_human=True,
+        )
 
 
 # ============================================================
@@ -109,27 +117,27 @@ class ConfidenceRouter:
 hitl_decision_points = [
     {
         "id": 1,
-        "name": "TODO: Name this decision point",
-        "trigger": "TODO: When does this trigger?",
-        "hitl_model": "TODO: human-in-the-loop / human-on-the-loop / human-as-tiebreaker",
-        "context_needed": "TODO: What does the reviewer need to see?",
-        "example": "TODO: Give a concrete example scenario",
+        "name": "High-Value Transfer Confirmation",
+        "trigger": "Transfer amount exceeds $10,000 OR to a new beneficiary",
+        "hitl_model": "human-on-the-loop",
+        "context_needed": "Sender account balance, transaction history (last 3 months), fraud risk score, beneficiary details (new or existing), transfer amount and destination",
+        "example": "Customer attempts to transfer $50,000 to a new international account. System flags as high-risk. Human reviewer checks sender's history, balance, and approves or blocks.",
     },
     {
         "id": 2,
-        "name": "TODO: Name this decision point",
-        "trigger": "TODO: When does this trigger?",
-        "hitl_model": "TODO: human-in-the-loop / human-on-the-loop / human-as-tiebreaker",
-        "context_needed": "TODO: What does the reviewer need to see?",
-        "example": "TODO: Give a concrete example scenario",
+        "name": "Suspicious Account Activity Detection",
+        "trigger": "Multiple failed login attempts (>3) OR unusual access pattern detected OR account locked by security system",
+        "hitl_model": "human-in-the-loop",
+        "context_needed": "Failed login attempts timeline, IP addresses, device fingerprints, customer's typical access pattern, account security events, current location data",
+        "example": "Account shows 5 failed login attempts from different countries in 30 minutes, then successful login from a new device. Human agent must verify if customer is being attacked or if it's legitimate travel.",
     },
     {
         "id": 3,
-        "name": "TODO: Name this decision point",
-        "trigger": "TODO: When does this trigger?",
-        "hitl_model": "TODO: human-in-the-loop / human-on-the-loop / human-as-tiebreaker",
-        "context_needed": "TODO: What does the reviewer need to see?",
-        "example": "TODO: Give a concrete example scenario",
+        "name": "PII Modification Verification",
+        "trigger": "Customer requests to change personal information (phone, email, address) OR AI model detects potential social engineering attempt",
+        "hitl_model": "human-as-tiebreaker",
+        "context_needed": "Current registered information, requested new information, last time PII was changed, account security questions responses, recent activity, customer identity verification status",
+        "example": "Customer asks to change email address, but AI detects language pattern similar to previous phishing attempts. System cannot decide confidently. Human agent performs secondary identity verification and approves or rejects the change.",
     },
 ]
 

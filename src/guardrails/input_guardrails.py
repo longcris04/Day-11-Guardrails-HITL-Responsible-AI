@@ -38,9 +38,23 @@ def detect_injection(user_input: str) -> bool:
         True if injection detected, False otherwise
     """
     INJECTION_PATTERNS = [
-        # TODO: Add at least 5 regex patterns
-        # Example:
-        # r"ignore (all )?(previous|above) instructions",
+        # 1. Cố gắng bỏ qua hoặc ghi đè các lệnh trước đó
+        r"ignore\s+(?:all\s+)?(?:previous|above)\s*(?:instructions|directions|prompts)",
+        
+        # 2. Cố gắng trích xuất/đánh cắp system prompt hoặc chỉ thị ban đầu
+        r"(?:reveal|print|show|output|repeat)\s+(?:the\s+)?(?:system\s+)?(?:prompt|instructions|message)",
+        
+        # 3. Ép đóng vai hoặc jailbreak (ví dụ: DAN - Do Anything Now, Developer Mode)
+        r"(?:act\s+as|you\s+are\s+now|simulate)\s+(?:a|an)?\s*(?:DAN|developer\s+mode|unrestricted\s+AI)",
+        
+        # 4. Kỹ thuật Prefix Injection (ép AI bắt đầu câu trả lời bằng một cụm từ đồng ý)
+        r"start\s+(?:your\s+)?(?:response|reply|answer)\s+with\s+[\"']?(?:sure|yes|absolutely|of\s+course)",
+        
+        # 5. Cố gắng vượt qua hoặc vô hiệu hóa các bộ lọc an toàn/quy tắc
+        r"(?:bypass|disable|override|turn\s+off)\s+(?:all\s+)?(?:rules|filters|safeguards|restrictions|guidelines)",
+        
+        # 6. Hỏi dò về các chỉ thị gốc của hệ thống
+        r"what\s+(?:were|was)\s+(?:your\s+)?(?:original|initial|previous|core)\s+(?:instructions|prompt)"
     ]
 
     for pattern in INJECTION_PATTERNS:
@@ -75,7 +89,28 @@ def topic_filter(user_input: str) -> bool:
     # 2. If input doesn't contain any allowed topic -> return True
     # 3. Otherwise -> return False (allow)
 
-    pass  # Replace with your implementation
+    ALLOWED_TOPICS = [
+        "banking", "account", "transaction", "transfer",
+        "loan", "interest", "savings", "credit",
+        "deposit", "withdrawal", "balance", "payment",
+        "tai khoan", "giao dich", "tiet kiem", "lai suat",
+        "chuyen tien", "the tin dung", "so du", "vay",
+        "ngan hang", "atm",
+    ]
+
+    # Blocked topics (immediate reject)
+    BLOCKED_TOPICS = [
+        "hack", "exploit", "weapon", "drug", "illegal",
+        "violence", "gambling", "bomb", "kill", "steal",
+    ]
+
+    if any(topic in input_lower for topic in BLOCKED_TOPICS):
+        return True
+
+    if any(topic in input_lower for topic in ALLOWED_TOPICS):
+        return False
+
+    return True  
 
 
 # ============================================================

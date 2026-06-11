@@ -43,12 +43,13 @@ def content_filter(response: str) -> dict:
 
     # PII patterns to check
     PII_PATTERNS = {
-        # TODO: Add regex patterns for:
-        # - VN phone number: r"0\d{9,10}"
-        # - Email: r"[\w.-]+@[\w.-]+\.[a-zA-Z]{2,}"
-        # - National ID (CMND/CCCD): r"\b\d{9}\b|\b\d{12}\b"
-        # - API key pattern: r"sk-[a-zA-Z0-9-]+"
-        # - Password pattern: r"password\s*[:=]\s*\S+"
+        "vn_phone": r"\b0\d{9,10}\b",
+        "email": r"[\w.-]+@[\w.-]+\.[a-zA-Z]{2,}",
+        "national_id": r"\b\d{9}\b|\b\d{12}\b",
+        "api_key": r"sk-[a-zA-Z0-9-]+",
+        "password": r"password\s*(?:[:=]|is)\s*['\"]?[^,\s.]+",
+        "known_password": r"\badmin123\b",
+        "internal_db": r"db\.[\w.-]+\.internal(?::\d+)?"
     }
 
     for name, pattern in PII_PATTERNS.items():
@@ -93,13 +94,13 @@ If UNSAFE, add a brief reason on the next line.
 
 # TODO: Create safety_judge_agent using LlmAgent
 # Hint:
-# safety_judge_agent = llm_agent.LlmAgent(
-#     model=LiteLlm(model=OPENROUTER_MODEL),
-#     name="safety_judge",
-#     instruction=SAFETY_JUDGE_INSTRUCTION,
-# )
+safety_judge_agent = llm_agent.LlmAgent(
+    model=LiteLlm(model=OPENROUTER_MODEL),
+    name="safety_judge",
+    instruction=SAFETY_JUDGE_INSTRUCTION,
+)
 
-safety_judge_agent = None  # TODO: Replace with implementation
+# safety_judge_agent = None  # TODO: Replace with implementation
 judge_runner = None
 
 
@@ -182,7 +183,38 @@ class OutputGuardrailPlugin(base_plugin.BasePlugin):
         #    - If unsafe: replace llm_response.content with a safe message
         #    - Increment self.blocked_count
         # 3. Return llm_response (possibly modified)
+        filtered = content_filter(response_text)
+        if not filtered["safe"]:
+            self.redacted_count += 1
+            redacted_content = types.Content(
+                role="model",
+                parts=[types.Part.from_text(text=filtered["redacted"])],
+            )
+            try:
+                llm_response.content = redacted_content
+            except Exception:
+                return redacted_content
+            response_text = filtered["redacted"]
 
+        if self.use_llm_judge:
+            judgment = await llm_safety_check(response_text)
+            if not judgment["safe"]:
+                self.blocked_count += 1
+                safe_content = types.Content(
+                    role="model",
+                    parts=[
+                        types.Part.from_text(
+                            text=(
+                                "I cannot provide that information. Please ask about "
+                                "banking services instead."
+                            )
+                        )
+                    ],
+                )
+                try:
+                    llm_response.content = safe_content
+                except Exception:
+                    return safe_content
         return llm_response  # TODO: modify if needed
 
 

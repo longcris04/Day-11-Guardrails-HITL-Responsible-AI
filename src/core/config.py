@@ -2,11 +2,14 @@
 Lab 11 — Configuration & API Key Setup
 """
 import os
+from dotenv import load_dotenv
+
+load_dotenv()
 
 # Model used across all agents. Override via OPENROUTER_MODEL env var.
 # Browse available models at https://openrouter.ai/models
 OPENROUTER_MODEL = os.environ.get(
-    "OPENROUTER_MODEL", "openrouter/google/gemini-2.0-flash"
+    "OPENROUTER_MODEL", "openrouter/google/gemini-2.5-flash-lite"
 )
 
 
