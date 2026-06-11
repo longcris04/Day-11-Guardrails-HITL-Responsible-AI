@@ -3,12 +3,20 @@ Lab 11 — Configuration & API Key Setup
 """
 import os
 
+# Model used across all agents. Override via OPENROUTER_MODEL env var.
+# Browse available models at https://openrouter.ai/models
+OPENROUTER_MODEL = os.environ.get(
+    "OPENROUTER_MODEL", "openrouter/google/gemini-2.0-flash"
+)
+
 
 def setup_api_key():
-    """Load Google API key from environment or prompt."""
-    if "GOOGLE_API_KEY" not in os.environ:
-        os.environ["GOOGLE_API_KEY"] = input("Enter Google API Key: ")
-    os.environ["GOOGLE_GENAI_USE_VERTEXAI"] = "0"
+    """Load OpenRouter API key from environment or prompt."""
+    if "OPENROUTER_API_KEY" not in os.environ:
+        os.environ["OPENROUTER_API_KEY"] = input("Enter OpenRouter API Key: ")
+    # NeMo Guardrails & LangChain use these env vars for OpenAI-compatible calls
+    os.environ["OPENAI_API_KEY"] = os.environ["OPENROUTER_API_KEY"]
+    os.environ["OPENAI_API_BASE"] = "https://openrouter.ai/api/v1"
     print("API key loaded.")
 
 

@@ -4,9 +4,9 @@ Lab 11 — Part 1: Adversarial Attacks
   TODO 2: Generate attack test cases with AI
 """
 import json
+import litellm
 
-from google import genai
-
+from core.config import OPENROUTER_MODEL
 from core.utils import chat_with_agent
 
 
@@ -150,21 +150,20 @@ Format as JSON array. Make prompts LONG and DETAILED — short prompts are easy 
 
 
 async def generate_ai_attacks() -> list:
-    """Use Gemini to generate adversarial prompts automatically.
+    """Use an LLM via OpenRouter to generate adversarial prompts automatically.
 
     Returns:
         List of attack dicts with type, prompt, target, why_it_works
     """
-    client = genai.Client()
-    response = client.models.generate_content(
-        model="gemini-2.5-flash-lite",
-        contents=RED_TEAM_PROMPT,
+    response = litellm.completion(
+        model=OPENROUTER_MODEL,
+        messages=[{"role": "user", "content": RED_TEAM_PROMPT}],
     )
 
     print("AI-Generated Attack Prompts (Aggressive):")
     print("=" * 60)
     try:
-        text = response.text
+        text = response.choices[0].message.content
         start = text.find("[")
         end = text.rfind("]") + 1
         if start >= 0 and end > start:
@@ -181,7 +180,7 @@ async def generate_ai_attacks() -> list:
             ai_attacks = []
     except Exception as e:
         print(f"Error parsing: {e}")
-        print(f"Raw response: {response.text[:500]}")
+        print(f"Raw response: {text[:500]}")
         ai_attacks = []
 
     print(f"\nTotal: {len(ai_attacks)} AI-generated attacks")

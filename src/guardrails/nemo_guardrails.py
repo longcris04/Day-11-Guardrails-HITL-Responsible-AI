@@ -4,6 +4,8 @@ Lab 11 — Part 2C: NeMo Guardrails
 """
 import textwrap
 
+from core.config import OPENROUTER_MODEL
+
 try:
     from nemoguardrails import RailsConfig, LLMRails
     NEMO_AVAILABLE = True
